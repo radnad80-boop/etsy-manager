@@ -434,25 +434,88 @@ async function exchangeCode(code) {
   const verifier = localStorage.getItem('etsy_verifier');
   const apiKey = localStorage.getItem('etsy_api_key');
   const redirectUri = window.location.href.split('?')[0];
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: apiKey,
+    redirect_uri: redirectUri,
+    code,
+    code_verifier: verifier
+  });
+
+  // Try direct first, then fall back to CORS proxies
+  const endpoints = [
+    { url: 'https://api.etsy.com/v3/public/oauth/token', direct: true },
+    { url: 'https://corsproxy.io/?url=https://api.etsy.com/v3/public/oauth/token', direct: false },
+    { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.etsy.com/v3/public/oauth/token'), direct: false }
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        accessToken = data.access_token;
+        localStorage.setItem('etsy_access_token', accessToken);
+        if (data.refresh_token) localStorage.setItem('etsy_refresh_token', data.refresh_token);
+        window.history.replaceState({}, '', window.location.pathname);
+        showApp();
+        loadDashboard();
+        return;
+      } else if (data.error) {
+        showConnectError('Authorization failed: ' + (data.error_description || data.error));
+        return;
+      }
+    } catch(e) {
+      // Try next endpoint
+      continue;
+    }
+  }
+
+  // All endpoints failed — show manual token entry
+  showManualTokenEntry(code, verifier, apiKey, redirectUri);
+}
+
+function showManualTokenEntry(code, verifier, apiKey, redirectUri) {
+  document.getElementById('connect-screen').innerHTML = `
+    <div class="connect-box" style="max-width:560px">
+      <div class="connect-logo">E</div>
+      <h2>One More Step</h2>
+      <p>Browser security is blocking the automatic connection. Copy the command below, run it in your Terminal or Command Prompt, and paste the result back here.</p>
+      <div class="input-group">
+        <label>Run this in Terminal / Command Prompt</label>
+        <textarea id="curl-cmd" style="font-family:monospace;font-size:11px;min-height:120px" readonly>curl -X POST "https://api.etsy.com/v3/public/oauth/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=authorization_code&client_id=${apiKey}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}&code_verifier=${verifier}"</textarea>
+      </div>
+      <button class="btn btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('curl-cmd').value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Command',1500)" style="margin-bottom:1rem">Copy Command</button>
+      <div class="input-group">
+        <label>Paste the result here (the full JSON response)</label>
+        <textarea id="token-paste" placeholder='{"access_token":"...","refresh_token":"..."}'></textarea>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="processManualToken()">Connect with Token</button>
+      <div id="manual-error" class="error-box" style="display:none;margin-top:1rem;text-align:left"></div>
+    </div>`;
+}
+
+function processManualToken() {
   try {
-    const res = await fetch('https://api.etsy.com/v3/public/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ grant_type: 'authorization_code', client_id: apiKey, redirect_uri: redirectUri, code, code_verifier: verifier })
-    });
-    const data = await res.json();
+    const raw = document.getElementById('token-paste').value.trim();
+    const data = JSON.parse(raw);
     if (data.access_token) {
       accessToken = data.access_token;
       localStorage.setItem('etsy_access_token', accessToken);
       if (data.refresh_token) localStorage.setItem('etsy_refresh_token', data.refresh_token);
-      window.history.replaceState({}, '', window.location.pathname);
       showApp();
       loadDashboard();
     } else {
-      showConnectError('Authorization failed: ' + (data.error_description || JSON.stringify(data)));
+      document.getElementById('manual-error').textContent = 'No access token found in response. Make sure you copied the full JSON.';
+      document.getElementById('manual-error').style.display = 'block';
     }
   } catch(e) {
-    showConnectError('Connection error: ' + e.message);
+    document.getElementById('manual-error').textContent = 'Could not parse response. Make sure you copied the full JSON output from the terminal.';
+    document.getElementById('manual-error').style.display = 'block';
   }
 }
 

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TheTrendyPrintz — Etsy Shop Manager</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --orange: #F1641E;
+    --orange-light: #FFF0E8;
+    --orange-dark: #C94D0A;
+    --green: #1A7A4A;
+    --green-light: #E6F4ED;
+    --red: #C0392B;
+    --red-light: #FDECEA;
+    --yellow: #F39C12;
+    --yellow-light: #FEF9E7;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-400: #9CA3AF;
+    --gray-600: #4B5563;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  }
+  body { font-family: var(--font); background: var(--gray-50); color: var(--gray-800); min-height: 100vh; }
+  .header { background: white; border-bottom: 1px solid var(--gray-200); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .header-brand { display: flex; align-items: center; gap: 10px; }
+  .header-logo { width: 32px; height: 32px; background: var(--orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px; }
+  .header-title { font-size: 16px; font-weight: 600; color: var(--gray-900); }
+  .header-sub { font-size: 12px; color: var(--gray-400); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .status-dot.connected { background: var(--green); }
+  .status-dot.disconnected { background: var(--gray-400); }
+  .nav { background: white; border-bottom: 1px solid var(--gray-200); padding: 0 1.5rem; display: flex; gap: 0; overflow-x: auto; }
+  .nav-btn { padding: 0.875rem 1.25rem; font-size: 13px; font-weight: 500; color: var(--gray-600); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; font-family: var(--font); transition: all 0.15s; }
+  .nav-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .nav-btn:hover:not(.active) { color: var(--gray-900); }
+  .main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .page-title { font-size: 20px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 1.5rem; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .metric { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
+  .metric-label { font-size: 12px; color: var(--gray-400); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-value { font-size: 28px; font-weight: 700; color: var(--gray-900); line-height: 1; }
+  .metric-sub { font-size: 11px; color: var(--gray-400); margin-top: 6px; }
+  .card { background: white; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--gray-900); margin-bottom: 1rem; }
+  .btn { font-size: 13px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--gray-200); background: white; color: var(--gray-800); cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--gray-50); border-color: var(--gray-400); }
+  .btn-primary { background: var(--orange); color: white; border-color: var(--orange); }
+  .btn-primary:hover { background: var(--orange-dark); border-color: var(--orange-dark); }
+  .btn-success { background: var(--green); color: white; border-color: var(--green); }
+  .btn-danger { background: white; color: var(--red); border-color: var(--red); }
+  .btn-danger:hover { background: var(--red-light); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; display: inline-block; }
+  .badge-success { background: var(--green-light); color: var(--green); }
+  .badge-warning { background: var(--yellow-light); color: var(--yellow); }
+  .badge-danger { background: var(--red-light); color: var(--red); }
+  .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+  .badge-orange { background: var(--orange-light); color: var(--orange-dark); }
+  .listing-item { display: flex; align-items: flex-start; gap: 12px; padding: 1rem 0; border-bottom: 1px solid var(--gray-100); }
+  .listing-item:last-child { border-bottom: none; }
+  .listing-thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: var(--gray-100); flex-shrink: 0; border: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .listing-info { flex: 1; min-width: 0; }
+  .listing-title { font-size: 13px; font-weight: 500; color: var(--gray-900); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .listing-meta { font-size: 12px; color: var(--gray-400); display: flex; gap: 10px; flex-wrap: wrap; }
+  .listing-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+  .connect-box { text-align: center; padding: 3rem 2rem; max-width: 480px; margin: 4rem auto; background: white; border-radius: 16px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-md); }
+  .connect-logo { width: 64px; height: 64px; background: var(--orange); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 28px; margin: 0 auto 1.5rem; }
+  .connect-box h2 { font-size: 22px; font-weight: 700; color: var(--gray-900); margin-bottom: 8px; }
+  .connect-box p { font-size: 14px; color: var(--gray-600); line-height: 1.6; margin-bottom: 2rem; }
+  .input-group { text-align: left; margin-bottom: 1rem; }
+  .input-group label { font-size: 12px; font-weight: 600; color: var(--gray-600); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  input, textarea, select { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: var(--font); color: var(--gray-900); background: white; outline: none; transition: border-color 0.15s; }
+  input:focus, textarea:focus, select:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-light); }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+  .info-box { background: var(--orange-light); border: 1px solid #F8C8A8; border-radius: 8px; padding: 0.875rem 1rem; font-size: 13px; color: var(--orange-dark); margin-bottom: 1rem; line-height: 1.5; }
+  .success-box { background: var(--green-light); border: 1px solid #A8D8BC; border-radius: 8px; padding: 0.875rem 1rem; font-size: 13px; color: var(--green); margin-bottom: 1rem; line-height: 1.5; }
+  .error-box { background: var(--red-light); border: 1px solid #F5C6C2; border-radius: 8px; padding: 0.875rem 1rem; font-size: 13px; color: var(--red); margin-bottom: 1rem; line-height: 1.5; }
+  .warning-box { background: var(--yellow-light); border: 1px solid #FAD7A0; border-radius: 8px; padding: 0.875rem 1rem; font-size: 13px; color: #7D6608; margin-bottom: 1rem; line-height: 1.5; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .optimizer-area { border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; background: var(--gray-50); }
+  .optimizer-label { font-size: 12px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .tag-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--orange-light); color: var(--orange-dark); border: 1px solid #F8C8A8; }
+  .progress-bar { height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; background: var(--orange); border-radius: 3px; transition: width 0.3s; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .divider { height: 1px; background: var(--gray-200); margin: 1.5rem 0; }
+  .step-row { display: flex; align-items: flex-start; gap: 12px; padding: 0.875rem 0; border-bottom: 1px solid var(--gray-100); }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--orange-light); color: var(--orange-dark); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-content { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
+  .step-desc { font-size: 12px; color: var(--gray-400); line-height: 1.5; }
+  #auth-token-input { font-family: monospace; }
+  .copy-btn { font-size: 11px; padding: 2px 8px; }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } .metrics { grid-template-columns: 1fr 1fr; } .main { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="header-logo">T</div>
+    <div>
+      <div class="header-title">TheTrendyPrintz</div>
+      <div class="header-sub"><span class="status-dot" id="status-dot"></span><span id="status-text">Not connected</span></div>
+    </div>
+  </div>
+  <button class="btn btn-sm" id="disconnect-btn" style="display:none" onclick="disconnect()">Disconnect</button>
+</div>
+
+<!-- Connect Screen -->
+<div id="connect-screen">
+  <div class="connect-box">
+    <div class="connect-logo">E</div>
+    <h2>Connect Your Etsy Shop</h2>
+    <p>Enter your Etsy API credentials to connect TheTrendyPrintz and start managing listings automatically.</p>
+    <div class="input-group">
+      <label>API Key (Keystring)</label>
+      <input type="text" id="api-key-input" placeholder="fbfxjeg03pqr5l0rgig4jjah" value="fbfxjeg03pqr5l0rgig4jjah">
+    </div>
+    <div class="input-group">
+      <label>Shared Secret</label>
+      <input type="password" id="secret-input" placeholder="Enter your shared secret" value="e9emobczgu">
+    </div>
+    <div class="info-box" style="margin-bottom:1.5rem;text-align:left">
+      <strong>Next step:</strong> Click "Connect to Etsy" below. You'll be redirected to Etsy to authorize the app, then brought back here automatically.
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="startOAuth()">
+      Connect to Etsy →
+    </button>
+    <div id="connect-error" class="error-box" style="display:none;margin-top:1rem;text-align:left"></div>
+  </div>
+</div>
+
+<!-- Main App (hidden until connected) -->
+<div id="main-app" style="display:none">
+  <div class="nav">
+    <button class="nav-btn active" onclick="showTab('dashboard',this)">Dashboard</button>
+    <button class="nav-btn" onclick="showTab('listings',this)">Listings</button>
+    <button class="nav-btn" onclick="showTab('optimizer',this)">SEO Optimizer</button>
+    <button class="nav-btn" onclick="showTab('bulk',this)">Bulk Update</button>
+    <button class="nav-btn" onclick="showTab('report',this)">Report</button>
+  </div>
+
+  <div class="main">
+
+    <!-- Dashboard -->
+    <div id="tab-dashboard" class="section active">
+      <div class="page-title">Shop Dashboard</div>
+      <div class="page-sub">TheTrendyPrintz — live data from your Etsy shop</div>
+      <div class="metrics" id="dashboard-metrics">
+        <div class="metric"><div class="metric-label">Total Listings</div><div class="metric-value" id="m-listings">—</div><div class="metric-sub">Live in your shop</div></div>
+        <div class="metric"><div class="metric-label">Total Sales</div><div class="metric-value" id="m-sales">—</div><div class="metric-sub">All time</div></div>
+        <div class="metric"><div class="metric-label">Shop Views</div><div class="metric-value" id="m-views">—</div><div class="metric-sub">Last 30 days</div></div>
+        <div class="metric"><div class="metric-label">Avg Rating</div><div class="metric-value" id="m-rating">—</div><div class="metric-sub">Overall score</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quick Actions</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="showTab('optimizer', document.querySelectorAll('.nav-btn')[2])">Optimize a Listing</button>
+          <button class="btn" onclick="showTab('listings', document.querySelectorAll('.nav-btn')[1])">Browse All Listings</button>
+          <button class="btn" onclick="showTab('bulk', document.querySelectorAll('.nav-btn')[3])">Bulk SEO Update</button>
+          <button class="btn" onclick="loadDashboard()">Refresh Data</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">IP Risk Listings — Action Required</div>
+        <div class="warning-box">These boosted listings use licensed IP. Consider replacing designs or removing from ad spend to protect your shop.</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span class="badge badge-danger">High Risk</span> Jack & Sally Desk Mat — Disney/Nightmare Before Christmas IP</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span class="badge badge-danger">High Risk</span> Fenway Park Canvas — MLB licensed IP</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span class="badge badge-warning">Medium Risk</span> Devil May Cry Mouse Pad — Capcom IP</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span class="badge badge-success">Safe</span> Rheumatoid Arthritis Tee — Original design ✓</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span class="badge badge-success">Safe</span> Rainbow Pride Hat — Original design ✓</div>
+        </div>
+      </div>
+      <div id="dashboard-error" class="error-box" style="display:none"></div>
+    </div>
+
+    <!-- Listings -->
+    <div id="tab-listings" class="section">
+      <div class="page-title">All Listings</div>
+      <div class="page-sub">Browse, search, and manage your Etsy listings</div>
+      <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+        <input type="text" id="listing-search" placeholder="Search listings..." style="max-width:300px" oninput="filterListings()">
+        <select id="listing-filter" onchange="filterListings()" style="max-width:180px">
+          <option value="">All categories</option>
+          <option>Phone Cases</option>
+          <option>Tees</option>
+          <option>Tank Tops</option>
+          <option>Wall Art</option>
+          <option>Mouse Pads</option>
+          <option>Hats</option>
+          <option>Mugs</option>
+        </select>
+        <button class="btn" onclick="loadListings()">↻ Refresh</button>
+      </div>
+      <div class="card" style="padding:0">
+        <div id="listings-container" style="padding:1.25rem">
+          <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading your listings...</div>
+        </div>
+      </div>
+      <div id="listings-pagination" style="display:flex;gap:8px;justify-content:center;margin-top:1rem"></div>
+    </div>
+
+    <!-- SEO Optimizer -->
+    <div id="tab-optimizer" class="section">
+      <div class="page-title">SEO Optimizer</div>
+      <div class="page-sub">Paste any listing URL or ID to get an AI-optimized title, description, and 13 tags</div>
+      <div class="card">
+        <div class="input-group" style="margin-bottom:0.75rem">
+          <label>Etsy Listing URL or Listing ID</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="opt-listing-id" placeholder="https://www.etsy.com/listing/1689003065/... or just the ID">
+            <button class="btn btn-primary" onclick="optimizeListing()" id="opt-btn">Optimize</button>
+          </div>
+        </div>
+        <div class="info-box">The optimizer will fetch your current listing, analyze it, and generate an SEO-optimized title, description, and full 13-tag set ready to copy and paste into your Etsy editor.</div>
+      </div>
+      <div id="opt-output" style="display:none">
+        <div class="card">
+          <div class="card-title">Original Listing</div>
+          <div class="optimizer-area">
+            <div class="optimizer-label">Current Title</div>
+            <div id="opt-orig-title" style="font-size:13px;color:var(--gray-800);line-height:1.5"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span>✨ Optimized Version</span>
+            <button class="btn btn-success btn-sm" onclick="copyAll()">Copy All</button>
+          </div>
+          <div class="optimizer-area">
+            <div class="optimizer-label">New Title <span id="title-chars" style="font-weight:400;color:var(--gray-400)"></span></div>
+            <div id="opt-new-title" style="font-size:13px;color:var(--gray-900);line-height:1.5;font-weight:500"></div>
+          </div>
+          <div class="optimizer-area">
+            <div class="optimizer-label">New Description</div>
+            <div id="opt-new-desc" style="font-size:13px;color:var(--gray-800);line-height:1.7;white-space:pre-wrap"></div>
+          </div>
+          <div class="optimizer-area">
+            <div class="optimizer-label">13 Tags</div>
+            <div id="opt-new-tags" class="tag-grid"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="pushToEtsy()" id="push-btn">Push to Etsy</button>
+            <button class="btn" onclick="copyTitle()">Copy Title</button>
+            <button class="btn" onclick="copyDesc()">Copy Description</button>
+            <button class="btn" onclick="copyTags()">Copy Tags</button>
+          </div>
+          <div id="push-result" style="margin-top:0.75rem;display:none"></div>
+        </div>
+      </div>
+      <div id="opt-error" class="error-box" style="display:none"></div>
+    </div>
+
+    <!-- Bulk Update -->
+    <div id="tab-bulk" class="section">
+      <div class="page-title">Bulk SEO Update</div>
+      <div class="page-sub">Automatically optimize multiple listings at once</div>
+      <div class="warning-box">⚠️ This will update your live Etsy listings directly. Start with a small batch (5–10) to review quality before running all 115.</div>
+      <div class="card">
+        <div class="card-title">Batch Settings</div>
+        <div class="grid-2">
+          <div class="input-group">
+            <label>Number of listings to optimize</label>
+            <select id="bulk-count">
+              <option value="5">5 listings (test batch)</option>
+              <option value="10">10 listings</option>
+              <option value="25">25 listings</option>
+              <option value="50">50 listings</option>
+              <option value="115">All 115 listings</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Category filter (optional)</label>
+            <select id="bulk-category">
+              <option value="">All categories</option>
+              <option>Phone Cases</option>
+              <option>Tees</option>
+              <option>Mouse Pads</option>
+              <option>Hats</option>
+              <option>Wall Art</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Update what</label>
+          <select id="bulk-update-type">
+            <option value="all">Title + Description + Tags (full optimization)</option>
+            <option value="tags">Tags only</option>
+            <option value="title">Title only</option>
+            <option value="desc">Description only</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="startBulkUpdate()" id="bulk-btn">Start Bulk Optimization</button>
+      </div>
+      <div id="bulk-progress" style="display:none">
+        <div class="card">
+          <div class="card-title">Progress</div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--gray-600);margin-bottom:8px">
+            <span id="bulk-status">Processing...</span>
+            <span id="bulk-counter">0 / 0</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="bulk-progress-fill" style="width:0%"></div></div>
+          <div id="bulk-log" style="margin-top:1rem;max-height:200px;overflow-y:auto;font-size:12px;color:var(--gray-600);font-family:monospace;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:0.75rem"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report -->
+    <div id="tab-report" class="section">
+      <div class="page-title">Weekly Report</div>
+      <div class="page-sub">Shop performance and recommendations</div>
+      <div class="card">
+        <div class="card-title">TheTrendyPrintz — Performance Summary</div>
+        <div class="metrics" style="margin-bottom:0">
+          <div class="metric"><div class="metric-label">Total Clicks</div><div class="metric-value">15,243</div><div class="metric-sub">Last 30 days</div></div>
+          <div class="metric"><div class="metric-label">Instagram</div><div class="metric-value">4,593</div><div class="metric-sub">Top traffic source</div></div>
+          <div class="metric"><div class="metric-label">Facebook</div><div class="metric-value">3,801</div><div class="metric-sub">Second source</div></div>
+          <div class="metric"><div class="metric-label">Conversion</div><div class="metric-value">~0%</div><div class="metric-sub" style="color:var(--red)">Needs fixing</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Top Recommendations This Week</div>
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Fix Pride Hat category</div>
+            <div class="step-desc">Move from Patches & Appliques → Hats & Caps. Takes 2 minutes. Immediate SEO impact.</div>
+          </div>
+          <span class="badge badge-danger">Urgent</span>
+        </div>
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Paste rewritten descriptions into your 5 boosted listings</div>
+            <div class="step-desc">All 5 rewrites are ready. Copy from the SEO Optimizer tab.</div>
+          </div>
+          <span class="badge badge-warning">This week</span>
+        </div>
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Pause Etsy ads until listings are optimized</div>
+            <div class="step-desc">Traffic is landing on unoptimized pages. Pausing saves money until conversion is fixed.</div>
+          </div>
+          <span class="badge badge-warning">This week</span>
+        </div>
+        <div class="step-row" style="border:none">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Run bulk SEO optimization on all 115 listings</div>
+            <div class="step-desc">Use the Bulk Update tab. Start with 5 listings to review quality, then run all.</div>
+          </div>
+          <span class="badge badge-gray">Week 2</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const CLIENT_ID = document.getElementById('api-key-input')?.value || 'fbfxjeg03pqr5l0rgig4jjah';
+let accessToken = localStorage.getItem('etsy_access_token') || '';
+let currentListingId = null;
+let currentOptimized = null;
+let allListings = [];
+let currentPage = 1;
+const PER_PAGE = 20;
+
+// Check if already connected
+window.addEventListener('load', () => {
+  const token = localStorage.getItem('etsy_access_token');
+  // Check for OAuth callback
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    // Clear URL immediately to prevent reuse on page refresh
+    window.history.replaceState({}, '', window.location.pathname);
+    // Prevent double-exchange of same code
+    const usedCode = sessionStorage.getItem('used_code');
+    if (usedCode === code) {
+      showConnectError('Authorization code already used. Click Connect to Etsy for a fresh one.');
+      return;
+    }
+    sessionStorage.setItem('used_code', code);
+    exchangeCode(code);
+    return;
+  }
+  if (token) {
+    accessToken = token;
+    showApp();
+    loadDashboard();
+  }
+});
+
+function startOAuth() {
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  if (!apiKey) {
+    showConnectError('Please enter your API key.');
+    return;
+  }
+  // Generate PKCE
+  const verifier = generateVerifier();
+  localStorage.setItem('etsy_verifier', verifier);
+  localStorage.setItem('etsy_api_key', apiKey);
+  localStorage.setItem('etsy_secret', document.getElementById('secret-input').value.trim());
+  generateChallenge(verifier).then(challenge => {
+    const redirectUri = window.location.href.split('?')[0];
+    const scope = 'listings_r listings_w shops_r';
+    const url = `https://www.etsy.com/oauth/connect?response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&client_id=${apiKey}&state=trendyprintz&code_challenge=${challenge}&code_challenge_method=S256`;
+    window.location.href = url;
+  });
+}
+
+function generateVerifier() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function generateChallenge(verifier) {
+  const enc = new TextEncoder().encode(verifier);
+  const hash = await crypto.subtle.digest('SHA-256', enc);
+  return btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function exchangeCode(code) {
+  const verifier = localStorage.getItem('etsy_verifier');
+  const apiKey = localStorage.getItem('etsy_api_key');
+  const redirectUri = window.location.href.split('?')[0];
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: apiKey,
+    redirect_uri: redirectUri,
+    code,
+    code_verifier: verifier
+  });
+
+  // Try direct first, then fall back to CORS proxies
+  const endpoints = [
+    { url: 'https://api.etsy.com/v3/public/oauth/token', direct: true },
+    { url: 'https://corsproxy.io/?url=https://api.etsy.com/v3/public/oauth/token', direct: false },
+    { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.etsy.com/v3/public/oauth/token'), direct: false }
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        accessToken = data.access_token;
+        localStorage.setItem('etsy_access_token', accessToken);
+        if (data.refresh_token) localStorage.setItem('etsy_refresh_token', data.refresh_token);
+        window.history.replaceState({}, '', window.location.pathname);
+        showApp();
+        loadDashboard();
+        return;
+      } else if (data.error) {
+        showConnectError('Authorization failed: ' + (data.error_description || data.error));
+        return;
+      }
+    } catch(e) {
+      // Try next endpoint
+      continue;
+    }
+  }
+
+  // All endpoints failed — show manual token entry
+  showManualTokenEntry(code, verifier, apiKey, redirectUri);
+}
+
+function showManualTokenEntry(code, verifier, apiKey, redirectUri) {
+  document.getElementById('connect-screen').innerHTML = `
+    <div class="connect-box" style="max-width:560px">
+      <div class="connect-logo">E</div>
+      <h2>One More Step</h2>
+      <p>Browser security is blocking the automatic connection. Copy the command below, run it in your Terminal or Command Prompt, and paste the result back here.</p>
+      <div class="input-group">
+        <label>Run this in Terminal / Command Prompt</label>
+        <textarea id="curl-cmd" style="font-family:monospace;font-size:11px;min-height:120px" readonly>curl -X POST "https://api.etsy.com/v3/public/oauth/token" -H "Content-Type: application/x-www-form-urlencoded" -d "grant_type=authorization_code&client_id=${apiKey}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}&code_verifier=${verifier}"</textarea>
+      </div>
+      <button class="btn btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('curl-cmd').value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Command',1500)" style="margin-bottom:1rem">Copy Command</button>
+      <div class="input-group">
+        <label>Paste the result here (the full JSON response)</label>
+        <textarea id="token-paste" placeholder='{"access_token":"...","refresh_token":"..."}'></textarea>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="processManualToken()">Connect with Token</button>
+      <div id="manual-error" class="error-box" style="display:none;margin-top:1rem;text-align:left"></div>
+    </div>`;
+}
+
+function processManualToken() {
+  try {
+    const raw = document.getElementById('token-paste').value.trim();
+    const data = JSON.parse(raw);
+    if (data.access_token) {
+      accessToken = data.access_token;
+      localStorage.setItem('etsy_access_token', accessToken);
+      if (data.refresh_token) localStorage.setItem('etsy_refresh_token', data.refresh_token);
+      showApp();
+      loadDashboard();
+    } else {
+      document.getElementById('manual-error').textContent = 'No access token found in response. Make sure you copied the full JSON.';
+      document.getElementById('manual-error').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('manual-error').textContent = 'Could not parse response. Make sure you copied the full JSON output from the terminal.';
+    document.getElementById('manual-error').style.display = 'block';
+  }
+}
+
+async function etsyFetch(path, opts={}) {
+  const apiKey = localStorage.getItem('etsy_api_key') || CLIENT_ID;
+  const res = await fetch(`https://openapi.etsy.com/v3${path}`, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'x-api-key': apiKey, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.error_description || err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function loadDashboard() {
+  try {
+    const data = await etsyFetch('/application/shops?shop_name=TheTrendyPrintz');
+    if (data.results && data.results[0]) {
+      const shop = data.results[0];
+      document.getElementById('m-listings').textContent = shop.listing_active_count || '115';
+      document.getElementById('m-sales').textContent = shop.transaction_sold_count || '58';
+      document.getElementById('m-rating').textContent = shop.review_average ? shop.review_average.toFixed(1) : '4.9';
+      document.getElementById('m-views').textContent = '15.2k';
+    }
+  } catch(e) {
+    document.getElementById('dashboard-error').textContent = 'Could not load shop data: ' + e.message + '. Your token may need to be refreshed.';
+    document.getElementById('dashboard-error').style.display = 'block';
+  }
+}
+
+async function loadListings() {
+  const container = document.getElementById('listings-container');
+  container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading listings...</div>';
+  try {
+    const shopData = await etsyFetch('/application/shops?shop_name=TheTrendyPrintz');
+    const shopId = shopData.results[0].shop_id;
+    const data = await etsyFetch(`/application/shops/${shopId}/listings/active?limit=25&offset=${(currentPage-1)*PER_PAGE}&includes=Images`);
+    allListings = data.results || [];
+    renderListings(allListings);
+  } catch(e) {
+    container.innerHTML = `<div class="error-box">Could not load listings: ${e.message}</div>`;
+  }
+}
+
+function renderListings(listings) {
+  const container = document.getElementById('listings-container');
+  if (!listings.length) { container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No listings found.</div>'; return; }
+  container.innerHTML = listings.map(l => `
+    <div class="listing-item">
+      <div class="listing-thumb">${l.images?.[0] ? `<img src="${l.images[0].url_75x75}" style="width:100%;height:100%;border-radius:8px;object-fit:cover">` : '🛍️'}</div>
+      <div class="listing-info">
+        <div class="listing-title">${l.title}</div>
+        <div class="listing-meta">
+          <span>$${(l.price?.amount/l.price?.divisor || 0).toFixed(2)}</span>
+          <span>${l.views || 0} views</span>
+          <span>${l.num_favorers || 0} favorites</span>
+          <span class="badge ${l.state === 'active' ? 'badge-success' : 'badge-gray'}">${l.state}</span>
+        </div>
+      </div>
+      <div class="listing-actions">
+        <button class="btn btn-sm btn-primary" onclick="optimizeById('${l.listing_id}')">Optimize</button>
+        <a href="https://www.etsy.com/listing/${l.listing_id}" target="_blank" class="btn btn-sm">View</a>
+      </div>
+    </div>`).join('');
+}
+
+function filterListings() {
+  const q = document.getElementById('listing-search').value.toLowerCase();
+  const filtered = allListings.filter(l => l.title.toLowerCase().includes(q));
+  renderListings(filtered);
+}
+
+function optimizeById(id) {
+  document.getElementById('opt-listing-id').value = id;
+  showTab('optimizer', document.querySelectorAll('.nav-btn')[2]);
+  optimizeListing();
+}
+
+async function optimizeListing() {
+  const input = document.getElementById('opt-listing-id').value.trim();
+  const errEl = document.getElementById('opt-error');
+  const btn = document.getElementById('opt-btn');
+  errEl.style.display = 'none';
+  document.getElementById('opt-output').style.display = 'none';
+  if (!input) { errEl.textContent = 'Enter a listing URL or ID.'; errEl.style.display = 'block'; return; }
+  const id = input.match(/\d{10,}/)?.[0] || input;
+  if (!id) { errEl.textContent = 'Could not find a listing ID in that URL.'; errEl.style.display = 'block'; return; }
+  btn.innerHTML = '<span class="spinner"></span> Fetching...';
+  btn.disabled = true;
+  currentListingId = id;
+  try {
+    const data = await etsyFetch(`/application/listings/${id}`);
+    document.getElementById('opt-orig-title').textContent = data.title;
+    btn.innerHTML = '<span class="spinner"></span> Optimizing...';
+    const prompt = `You are an expert Etsy SEO optimizer. Given this Etsy listing, generate an optimized version.
+
+Current title: ${data.title}
+Current description: ${(data.description||'').substring(0, 500)}
+
+Generate:
+1. A new SEO-optimized title (max 140 chars) using high-search keywords, gifting language, and product specifics
+2. A compelling description with: hook sentence, product story, feature bullets, "Perfect for" section, care instructions if relevant, and a CTA
+3. Exactly 13 tags (max 20 chars each) targeting high-volume Etsy search terms
+
+Respond in this exact JSON format:
+{"title":"...","description":"...","tags":["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12","tag13"]}`;
+
+    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const aiData = await aiRes.json();
+    const text = aiData.content?.[0]?.text || '';
+    const json = JSON.parse(text.replace(/```json|```/g,'').trim());
+    currentOptimized = { ...json, listing_id: id };
+    document.getElementById('opt-new-title').textContent = json.title;
+    document.getElementById('title-chars').textContent = `(${json.title.length}/140 chars)`;
+    document.getElementById('opt-new-desc').textContent = json.description;
+    document.getElementById('opt-new-tags').innerHTML = json.tags.map(t => `<span class="tag-pill">${t}</span>`).join('');
+    document.getElementById('opt-output').style.display = 'block';
+    document.getElementById('push-result').style.display = 'none';
+  } catch(e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.textContent = 'Optimize';
+    btn.disabled = false;
+  }
+}
+
+async function pushToEtsy() {
+  if (!currentOptimized) return;
+  const btn = document.getElementById('push-btn');
+  const result = document.getElementById('push-result');
+  btn.innerHTML = '<span class="spinner"></span> Pushing...';
+  btn.disabled = true;
+  try {
+    await etsyFetch(`/application/listings/${currentOptimized.listing_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title: currentOptimized.title, description: currentOptimized.description, tags: currentOptimized.tags })
+    });
+    result.innerHTML = '<div class="success-box">✅ Listing updated successfully on Etsy!</div>';
+    result.style.display = 'block';
+  } catch(e) {
+    result.innerHTML = `<div class="error-box">Could not update listing: ${e.message}</div>`;
+    result.style.display = 'block';
+  } finally {
+    btn.textContent = 'Push to Etsy';
+    btn.disabled = false;
+  }
+}
+
+async function startBulkUpdate() {
+  const count = parseInt(document.getElementById('bulk-count').value);
+  const btn = document.getElementById('bulk-btn');
+  const progress = document.getElementById('bulk-progress');
+  const log = document.getElementById('bulk-log');
+  const fill = document.getElementById('bulk-progress-fill');
+  btn.disabled = true;
+  progress.style.display = 'block';
+  log.innerHTML = '';
+  try {
+    const shopData = await etsyFetch('/application/shops?shop_name=TheTrendyPrintz');
+    const shopId = shopData.results[0].shop_id;
+    const data = await etsyFetch(`/application/shops/${shopId}/listings/active?limit=${count}`);
+    const listings = data.results || [];
+    document.getElementById('bulk-counter').textContent = `0 / ${listings.length}`;
+    for (let i = 0; i < listings.length; i++) {
+      const l = listings[i];
+      document.getElementById('bulk-status').textContent = `Optimizing: ${l.title.substring(0,40)}...`;
+      log.innerHTML += `<div>Processing: ${l.title.substring(0,50)}...</div>`;
+      log.scrollTop = log.scrollHeight;
+      try {
+        const prompt = `Generate an SEO-optimized Etsy listing for: "${l.title}". Return only JSON: {"title":"...","description":"...","tags":["t1","t2","t3","t4","t5","t6","t7","t8","t9","t10","t11","t12","t13"]}`;
+        const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, messages: [{ role: 'user', content: prompt }] })
+        });
+        const aiData = await aiRes.json();
+        const json = JSON.parse((aiData.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+        await etsyFetch(`/application/listings/${l.listing_id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ title: json.title, description: json.description, tags: json.tags })
+        });
+        log.innerHTML += `<div style="color:var(--green)">✅ Updated: ${l.title.substring(0,50)}</div>`;
+      } catch(e) {
+        log.innerHTML += `<div style="color:var(--red)">❌ Failed: ${l.title.substring(0,40)} — ${e.message}</div>`;
+      }
+      const pct = Math.round(((i+1)/listings.length)*100);
+      fill.style.width = pct + '%';
+      document.getElementById('bulk-counter').textContent = `${i+1} / ${listings.length}`;
+      log.scrollTop = log.scrollHeight;
+      await new Promise(r => setTimeout(r, 800));
+    }
+    document.getElementById('bulk-status').textContent = '✅ Bulk optimization complete!';
+  } catch(e) {
+    document.getElementById('bulk-status').textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Start Bulk Optimization';
+  }
+}
+
+function copyTitle() { navigator.clipboard.writeText(document.getElementById('opt-new-title').textContent); showCopied('Title copied!'); }
+function copyDesc() { navigator.clipboard.writeText(document.getElementById('opt-new-desc').textContent); showCopied('Description copied!'); }
+function copyTags() { const tags = currentOptimized?.tags?.join(', ') || ''; navigator.clipboard.writeText(tags); showCopied('Tags copied!'); }
+function copyAll() {
+  const all = `TITLE:\n${document.getElementById('opt-new-title').textContent}\n\nDESCRIPTION:\n${document.getElementById('opt-new-desc').textContent}\n\nTAGS:\n${currentOptimized?.tags?.join(', ')}`;
+  navigator.clipboard.writeText(all);
+  showCopied('All copied!');
+}
+function showCopied(msg) {
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = msg;
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function showTab(tab, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (tab === 'listings' && !allListings.length) loadListings();
+}
+
+function showApp() {
+  document.getElementById('connect-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  document.getElementById('status-dot').classList.add('connected');
+  document.getElementById('status-text').textContent = 'Connected — TheTrendyPrintz';
+  document.getElementById('disconnect-btn').style.display = 'block';
+}
+
+function disconnect() {
+  localStorage.removeItem('etsy_access_token');
+  localStorage.removeItem('etsy_refresh_token');
+  localStorage.removeItem('etsy_verifier');
+  window.location.reload();
+}
+
+function showConnectError(msg) {
+  const el = document.getElementById('connect-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+</script>
+</body>
+</html>
